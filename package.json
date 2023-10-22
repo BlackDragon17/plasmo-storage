@@ -24,6 +24,11 @@
         "require": "./dist/hook.cjs",
         "types": "./dist/hook.d.ts"
       },
+      "./ref": {
+        "import": "./src/ref.js",
+        "require": "./src/ref.cjs",
+        "types": "./src/ref.d.ts"
+      },
       ".": {
         "import": "./dist/index.js",
         "require": "./dist/index.cjs",
@@ -40,6 +45,9 @@
         ],
         "hook": [
           "./dist/hook.d.ts"
+        ],
+        "ref": [
+          "./dist/ref.d.ts"
         ]
       }
     }
@@ -60,6 +68,11 @@
       "require": "./src/hook.ts",
       "types": "./src/hook.ts"
     },
+    "./ref": {
+      "import": "./src/ref.ts",
+      "require": "./src/ref.ts",
+      "types": "./src/ref.ts"
+    },
     ".": {
       "import": "./src/index.ts",
       "require": "./src/index.ts",
@@ -76,6 +89,9 @@
       ],
       "hook": [
         "./src/hook.d.ts"
+      ],
+      "ref": [
+        "./src/ref.d.ts"
       ]
     }
   },
@@ -87,7 +103,8 @@
       "src/index.ts",
       "src/hook.ts",
       "src/secure.ts",
-      "src/inspector.ts"
+      "src/inspector.ts",
+      "src/ref.ts"
     ],
     "format": [
       "esm",
@@ -124,10 +141,14 @@
     "chrome-storage"
   ],
   "peerDependencies": {
-    "react": "^16.8.6 || ^17 || ^18"
+    "react": "^16.8.6 || ^17 || ^18",
+    "vue": "^3.3"
   },
   "peerDependenciesMeta": {
     "react": {
+      "optional": true
+    },
+    "vue": {
       "optional": true
     }
   },
@@ -151,6 +172,7 @@
     "rimraf": "5.0.1",
     "ts-jest": "29.1.1",
     "tsup": "7.2.0",
-    "typescript": "5.2.2"
+    "typescript": "5.2.2",
+    "vue": "3.3.4"
   }
 }
