@@ -3,58 +3,61 @@
  * Licensed under the MIT license.
  * This module share storage between chrome storage and local storage.
  */
-import {onMounted, onUnmounted, ref, watch, type WatchStopHandle} from "vue"
+import { onUnmounted, ref, watch } from "vue";
+import type { Ref, WatchStopHandle } from "vue";
 
 import { BaseStorage, Storage, type StorageCallbackMap } from "~index"
 
-export type RawKey =
+type RawKey =
   | string
   | {
       key: string
       instance: BaseStorage
     }
 
+type Setter<T> = T | ((storageValue?: T) => T)
+
 /**
  * https://docs.plasmo.com/framework/storage
- * @param key key of the local storage entry
- * @param value the initial value for this ref. Will only be used if the local storage entry is undefined.
- * @param persist whether the initial value should be saved to the local storage
- * @returns a Vue ref bound to a local storage entry with the provided key
+ * @param rawKey key of the local storage entry
+ * @param onInit the initial value for this ref. If a getter is given,
+ * the return value will be persisted in local storage
+ * @returns a Vue ref bound to the local storage entry with the provided key
  */
-export const useStorage = <T = any>(key: RawKey, value?: T, persist = false) => {
-  const isKeyAnObject = typeof key === "object"
-  const keyValue = isKeyAnObject ? key.key : key
-  const storage = isKeyAnObject ? key.instance : new Storage()
+export function useStorage<T = any>(rawKey: RawKey, onInit?: Setter<T>): Ref<T> {
+  const isKeyAnObject = typeof rawKey === "object"
+  const key = isKeyAnObject ? rawKey.key : rawKey
+  const storage = isKeyAnObject ? rawKey.instance : new Storage()
 
   const state = ref<T>();
 
-  // State watch updates storage on state change
-  let stateWatchCleanup: WatchStopHandle
-  // Storage watch updates state on storage change
-  const storageWatchConfig: StorageCallbackMap = {
-    [keyValue]: (change) => state.value = change.newValue
+  // State watcher updates storage on state change
+  let unwatchState: WatchStopHandle
+  // Storage watcher updates state on storage change
+  const storageWatcherConfig: StorageCallbackMap = {
+    [key]: (change) => state.value = change.newValue
   }
 
-  onMounted(async () => {
-    const initialStorageValue = await storage.get<T>(keyValue)
-    state.value = initialStorageValue !== undefined ? initialStorageValue : value
+  storage.get<T>(key).then((value) => {
+    if (onInit instanceof Function) {
+      state.value = onInit(value)
+    } else {
+      state.value = value === undefined ? onInit : value
+    }
 
-    // State watcher declared *after* first state write access to prevent watcher trigger
-    stateWatchCleanup = watch(state, async (newValue) => {
-      if (newValue === undefined || newValue === (await storage.get(keyValue))) {
+    unwatchState = watch(state, async (newValue: T) => {
+      if (newValue === undefined || newValue === (await storage.get(key))) {
         return
       }
-      await storage.set(keyValue, newValue)
-    }, {
-      immediate: persist
-    })
-
-    storage.watch(storageWatchConfig)
+      await storage.set(key, newValue)
+    }, {immediate: onInit instanceof Function})
   })
 
+  storage.watch(storageWatcherConfig)
+
   onUnmounted(() => {
-    stateWatchCleanup()
-    storage.unwatch(storageWatchConfig)
+    unwatchState()
+    storage.unwatch(storageWatcherConfig)
   })
 
   return state
